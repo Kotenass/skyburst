@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Skyburst</string>
+    <string name="start">Старт</string>
+    <string name="record">Рекорд</string>
+    <string name="score">Счёт</string>
+    <string name="again">Ещё раз</string>
+    <string name="game_over">Конец игры</string>
+    <string name="title_tagline">Вертикальный аркадный шутер</string>
+</resources>

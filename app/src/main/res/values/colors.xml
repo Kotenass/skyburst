@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF050510</color>
+    <color name="neon_cyan">#FF00F5FF</color>
+    <color name="neon_magenta">#FFFF2BD6</color>
+    <color name="neon_lime">#FFB8FF3C</color>
+    <color name="neon_orange">#FFFF8A3D</color>
+    <color name="hud_white">#FFE8F0FF</color>
+</resources>
