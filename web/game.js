@@ -9,7 +9,6 @@
   const VIOLET = [120, 80, 255];
 
   const Screen = { TITLE: 0, PLAYING: 1, GAME_OVER: 2 };
-  const TouchZone = { NONE: 0, LEFT: 1, CENTER: 2, RIGHT: 3 };
   const EnemyKind = { TRIANGLE: 0, DIAMOND: 1, HEX: 2 };
 
   const canvas = document.getElementById("game");
@@ -35,8 +34,8 @@
   let spawnTimer = 0;
   let meteorTimer = 0;
   let fireCooldown = 0;
-  let touchZone = TouchZone.NONE;
-  let holdingFire = false;
+  let pointerDown = false;
+  let aimX = 0;
   let flashAlpha = 0;
   let titlePulse = 0;
 
@@ -140,8 +139,8 @@
     spawnTimer = 0.6;
     meteorTimer = 1.8;
     fireCooldown = 0;
-    holdingFire = false;
-    touchZone = TouchZone.NONE;
+    pointerDown = false;
+    aimX = player.x;
     flashAlpha = 0;
     if (!keepScreen) screen = Screen.PLAYING;
     if (stars.length === 0) initStars();
@@ -175,27 +174,21 @@
     score = Math.floor(surviveMs / 100) + kills * 25;
 
     const speed = W * 0.95;
-    let zone = touchZone;
-    if (keys.left && !keys.right) zone = TouchZone.LEFT;
-    else if (keys.right && !keys.left) zone = TouchZone.RIGHT;
-    else if (keys.fire && touchZone === TouchZone.NONE) zone = TouchZone.CENTER;
+    if (keys.left) aimX -= speed * dt;
+    if (keys.right) aimX += speed * dt;
 
-    if (zone === TouchZone.LEFT) player.vx = -speed;
-    else if (zone === TouchZone.RIGHT) player.vx = speed;
-    else player.vx = 0;
-
-    player.x += player.vx * dt;
+    const follow = 18;
+    const k = Math.min(1, follow * dt);
+    player.x += (aimX - player.x) * k;
     player.x = Math.max(
       player.width * 0.6,
       Math.min(W - player.width * 0.6, player.x)
     );
+    player.y = H - player.height * 1.8;
+    aimX = Math.max(player.width * 0.6, Math.min(W - player.width * 0.6, aimX));
 
     fireCooldown -= dt;
-    const wantFire =
-      holdingFire ||
-      zone === TouchZone.CENTER ||
-      keys.fire ||
-      touchZone === TouchZone.CENTER;
+    const wantFire = pointerDown || keys.fire;
     if (wantFire && fireCooldown <= 0) {
       fire();
       fireCooldown = Math.max(0.12, 0.22 - difficulty() * 0.015);
@@ -399,8 +392,7 @@
       } catch (_) {}
     }
     screen = Screen.GAME_OVER;
-    holdingFire = false;
-    touchZone = TouchZone.NONE;
+    pointerDown = false;
   }
 
   function drawBackground() {
@@ -639,9 +631,7 @@
     ctx.font = `bold ${Math.floor(W * 0.028)}px monospace`;
     ctx.fillStyle = "rgba(255,255,255,0.2)";
     ctx.textAlign = "center";
-    ctx.fillText("◀", W * 0.16, H * 0.97);
-    ctx.fillText("ОГОНЬ", W * 0.5, H * 0.97);
-    ctx.fillText("▶", W * 0.84, H * 0.97);
+    ctx.fillText("Влево — вправо", W * 0.5, H * 0.97);
   }
 
   function drawTitle() {
@@ -676,7 +666,7 @@
 
     ctx.font = `bold ${Math.floor(W * 0.032)}px monospace`;
     ctx.fillStyle = "rgba(200,210,255,0.55)";
-    ctx.fillText("Лево / Огонь / Право", W / 2, H * 0.88);
+    ctx.fillText("Держи и веди влево-вправо", W / 2, H * 0.88);
   }
 
   function drawGameOver() {
@@ -725,11 +715,8 @@
     return { x, y };
   }
 
-  function setZoneFromX(x) {
-    if (x < W / 3) touchZone = TouchZone.LEFT;
-    else if (x > (W * 2) / 3) touchZone = TouchZone.RIGHT;
-    else touchZone = TouchZone.CENTER;
-    holdingFire = touchZone === TouchZone.CENTER;
+  function setAimX(x) {
+    aimX = Math.max(player.width * 0.6, Math.min(W - player.width * 0.6, x));
   }
 
   function onPointerDown(e) {
@@ -749,22 +736,23 @@
       }
       return;
     }
-    setZoneFromX(x);
+    pointerDown = true;
+    setAimX(x);
   }
 
   function onPointerMove(e) {
     if (screen !== Screen.PLAYING) return;
     if (e.buttons === 0 && e.pointerType === "mouse") return;
     e.preventDefault();
-    const { x } = canvasCoords(e.clientX, e.clientY);
-    setZoneFromX(x);
+    const { x, y } = canvasCoords(e.clientX, e.clientY);
+    pointerDown = true;
+    setAimX(x);
   }
 
   function onPointerUp(e) {
     e.preventDefault();
     if (screen === Screen.PLAYING) {
-      touchZone = TouchZone.NONE;
-      holdingFire = false;
+      pointerDown = false;
     }
   }
 

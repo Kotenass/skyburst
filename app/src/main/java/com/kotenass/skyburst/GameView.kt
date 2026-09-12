@@ -48,8 +48,8 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
     private var spawnTimer = 0f
     private var meteorTimer = 0f
     private var fireCooldown = 0f
-    private var touchZone = TouchZone.NONE
-    private var holdingFire = false
+    private var pointerDown = false
+    private var aimX = 0f
     private var flashAlpha = 0f
     private var titlePulse = 0f
 
@@ -71,8 +71,6 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
     private val violet = Color.rgb(120, 80, 255)
 
     private data class Star(var x: Float, var y: Float, var speed: Float, var size: Float, var bright: Int)
-
-    private enum class TouchZone { NONE, LEFT, CENTER, RIGHT }
 
     init {
         holder.addCallback(this)
@@ -166,8 +164,8 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
         spawnTimer = 0.6f
         meteorTimer = 1.8f
         fireCooldown = 0f
-        holdingFire = false
-        touchZone = TouchZone.NONE
+        pointerDown = false
+        aimX = player.x
         flashAlpha = 0f
         if (!keepScreen) screen = Screen.PLAYING
         if (stars.isEmpty()) initStars()
@@ -199,17 +197,14 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
         surviveMs = (gameTime * 1000).toLong()
         score = (surviveMs / 100).toInt() + kills * 25
 
-        val speed = canvasW * 0.95f
-        when (touchZone) {
-            TouchZone.LEFT -> player.vx = -speed
-            TouchZone.RIGHT -> player.vx = speed
-            else -> player.vx = 0f
-        }
-        player.x += player.vx * dt
+        val follow = 18f
+        val k = min(1f, follow * dt)
+        player.x += (aimX - player.x) * k
         player.x = player.x.coerceIn(player.width * 0.6f, canvasW - player.width * 0.6f)
+        player.y = canvasH - player.height * 1.8f
 
         fireCooldown -= dt
-        if (holdingFire || touchZone == TouchZone.CENTER) {
+        if (pointerDown) {
             if (fireCooldown <= 0f) {
                 fire()
                 fireCooldown = max(0.12f, 0.22f - difficulty() * 0.015f)
@@ -410,8 +405,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
             prefs.edit().putInt(KEY_HIGH, highScore).apply()
         }
         screen = Screen.GAME_OVER
-        holdingFire = false
-        touchZone = TouchZone.NONE
+        pointerDown = false
     }
 
     private fun drawFrame() {
@@ -654,9 +648,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
         textPaint.textAlign = Paint.Align.CENTER
         textPaint.textSize = canvasW * 0.028f
         textPaint.color = Color.argb(50, 255, 255, 255)
-        c.drawText("◀", canvasW * 0.16f, canvasH * 0.97f, textPaint)
-        c.drawText("ОГОНЬ", canvasW * 0.5f, canvasH * 0.97f, textPaint)
-        c.drawText("▶", canvasW * 0.84f, canvasH * 0.97f, textPaint)
+        c.drawText("Влево — вправо", canvasW * 0.5f, canvasH * 0.97f, textPaint)
     }
 
     private fun drawTitle(c: Canvas) {
@@ -685,7 +677,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
 
         textPaint.textSize = canvasW * 0.032f
         textPaint.color = Color.argb(140, 200, 210, 255)
-        c.drawText("Лево / Огонь / Право", canvasW / 2f, canvasH * 0.88f, textPaint)
+        c.drawText("Держи и веди влево-вправо", canvasW / 2f, canvasH * 0.88f, textPaint)
     }
 
     private fun drawDemoShip(c: Canvas, px: Float, py: Float, w: Float) {
@@ -771,16 +763,11 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
             Screen.PLAYING -> {
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE, MotionEvent.ACTION_POINTER_DOWN -> {
-                        touchZone = when {
-                            x < canvasW / 3f -> TouchZone.LEFT
-                            x > canvasW * 2f / 3f -> TouchZone.RIGHT
-                            else -> TouchZone.CENTER
-                        }
-                        holdingFire = touchZone == TouchZone.CENTER
+                        pointerDown = true
+                        aimX = x.coerceIn(player.width * 0.6f, canvasW - player.width * 0.6f)
                     }
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_POINTER_UP -> {
-                        touchZone = TouchZone.NONE
-                        holdingFire = false
+                        pointerDown = false
                     }
                 }
             }
