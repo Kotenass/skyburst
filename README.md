@@ -22,6 +22,18 @@
 
 Экраны: **Старт** + **Рекорд** → игра (HUD со счётом) → **Конец игры** / **Ещё раз**.
 
+## Веб-версия
+
+Та же игра в браузере (HTML5 Canvas), без сборки и npm.
+
+1. Откройте файл `web/index.html` в браузере  
+   или поднимите статику, например: `python3 -m http.server -d web 8080` и зайдите на http://localhost:8080/
+2. На телефоне: касания по третям экрана (лево / огонь / право).  
+   На десктопе: **A/D** или стрелки — движение, **Пробел** или клик по центру — огонь.
+3. Рекорд сохраняется в `localStorage` браузера.
+
+Файлы: `web/index.html`, `web/game.js`, `web/style.css`.
+
 ## Сборка
 
 Требуется Android SDK (compile/target SDK 35, minSdk 26).
@@ -41,6 +53,7 @@ app/build/outputs/apk/debug/app-debug.apk
 - Kotlin, single-module Gradle
 - Пакет: `com.kotenass.skyburst`
 - SurfaceView + игровой цикл на Canvas
+- Веб: чистый HTML5 Canvas (без сборки)
 - Без рекламы, бэкенда, биллинга и аналитики
 
 ## Лицензия
